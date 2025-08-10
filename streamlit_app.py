@@ -57,6 +57,33 @@ def labelled_select(label: str, key: str, options: List[str], index: int = 0):
     return st.selectbox(" ", options, index=index if options else None, key=key, label_visibility="collapsed")
 
 
+def taglist(key: str, label: str, placeholder: str = "Type and press Add"):
+    """Simple tags widget without extra dependencies.
+    - Adds items via a small form
+    - Renders removable chips
+    - Stores list in st.session_state[key]
+    """
+    if key not in st.session_state:
+        st.session_state[key] = []
+
+    with st.form(f"{key}_form", clear_on_submit=True):
+        val = st.text_input(label, value="", placeholder=placeholder)
+        submitted = st.form_submit_button("Add")
+    if submitted and val:
+        if val not in st.session_state[key]:
+            st.session_state[key].append(val)
+
+    tags = list(st.session_state[key])
+    if tags:
+        n_cols = max(1, min(6, len(tags)))
+        cols = st.columns(n_cols)
+        for i, t in enumerate(tags):
+            col = cols[i % n_cols]
+            with col:
+                st.button(f"✕ {t}", key=f"{key}_del_{i}", help="Remove",
+                          on_click=lambda t=t: st.session_state[key].remove(t))
+    return st.session_state[key]
+
 @dataclass
 class Character:
     name: str = ""
@@ -287,8 +314,8 @@ with t4:
 # ---------- Feats & Features Tab ----------
 with t5:
     st.markdown("### Feats & Class Features")
-    feats = st.tags_input("Feats (type and press Enter)", key="feats_tags")
-    features = st.tags_input("Class Features", key="features_tags")
+    feats = taglist("feats_tags", "Feats (type and press Add)")
+    features = taglist("features_tags", "Class Features")
     st.caption("These will later be validated against prerequisites from the database.")
 
 # ---------- Spells Tab ----------
@@ -297,13 +324,13 @@ with t6:
     cls = char.character_class
     st.write("Casting Class:", cls)
     st.selectbox("Spell List Level", options=list(range(0, 10)), key="spell_level")
-    st.tags_input("Known/Prepared Spells", key="spells_known")
+    taglist("spells_known", "Known/Prepared Spells")
     st.text_area("Spellbook / Notes", key="spellbook_notes")
 
 # ---------- Gear & Wealth Tab ----------
 with t7:
     st.markdown("### Gear & Wealth")
-    st.tags_input("Languages", key="languages")
+    taglist("languages", "Languages")
     st.text_area("Weapons & Armor", key="gear_weapons", height=100)
     st.text_area("Equipment & Tools", key="gear_tools", height=120)
     st.number_input("Wealth (gp)", key="wealth_gp", value=0, step=1)
