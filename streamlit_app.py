@@ -22,7 +22,8 @@ st.markdown(
       :root{ --accent:#c62828; --ink:#222; --muted:#666; --ring:#f3d6cf; }
       .small-label { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.15rem; }
       .section { border: 1px solid #e6e6e6; border-radius: 14px; padding: 1rem; margin-bottom: 1rem; background: #fafafa; }
-      .card { border: 2px solid var(--accent); border-radius: 14px; padding: .8rem; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,.04) inset; }
+      .card { border: 2px solid var(--accent); border-radius: 14px; padding: .8rem; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,.04) inset; color:#000; }
+      .card * { color:#000 !important; }
       .ability-card { text-align:center; }
       .ability-mod { font-size: 1.8rem; font-weight: 700; line-height: 1; color: var(--ink);}
       .ability-score { font-size: .9rem; color: var(--muted); }
@@ -232,7 +233,7 @@ for i, ab in enumerate(["STR","DEX","CON","INT","WIS","CHA"]):
 
 st.markdown("---")
 # Status / quick stats row (desktop-first, responsive)
-s1, s2, s3, s4 = st.columns([1.2, 1.2, 1.6, 2.4])
+s1, s2, s3, s4, s5 = st.columns([1.2, 1.2, 1.6, 2.6, 1.4])
 with s1:
     st.markdown("**Initiative**")
     ini_total = ability_mod(ability_total(char, "DEX")) + char.initiative_misc
@@ -242,15 +243,50 @@ with s2:
     st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{char.speed}</div><div class='pill-label'>ft.</div></div>", unsafe_allow_html=True)
 with s3:
     st.markdown("**Armor Class**")
-    ac_total = 10 + char.ac_armor + char.ac_shield + ability_mod(ability_total(char, "DEX")) + char.ac_natural + char.ac_deflection + char.ac_misc
-    st.markdown(f"<div class='card'><div class='big-number' style='text-align:center;'>{ac_total}</div><div class='subgrid'><div class='boxed'>Armor {char.ac_armor}</div><div class='boxed'>Shield {char.ac_shield}</div><div class='boxed'>Dex {ability_mod(ability_total(char, 'DEX')):+d}</div><div class='boxed'>Natural {char.ac_natural}</div><div class='boxed'>Defl. {char.ac_deflection}</div><div class='boxed'>Misc {char.ac_misc}</div></div></div>", unsafe_allow_html=True)
+    dex_mod = ability_mod(ability_total(char, "DEX"))
+    ac_total = 10 + char.ac_armor + char.ac_shield + dex_mod + char.ac_natural + char.ac_deflection + char.ac_misc
+    touch_ac = 10 + dex_mod + char.ac_deflection + char.ac_misc
+    flat_ac = 10 + char.ac_armor + char.ac_shield + char.ac_natural + char.ac_deflection + char.ac_misc
+    st.markdown(
+        f"""
+        <div class='card'>
+          <div class='big-number' style='text-align:center;'>{ac_total}</div>
+          <div class='subgrid'>
+            <div class='boxed'>Touch {touch_ac}</div>
+            <div class='boxed'>Flat-Footed {flat_ac}</div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 with s4:
     st.markdown("**Hit Points**")
-    c = st.columns(3)
-    with c[0]: char.hp_current = labelled_number("Current", "hp_current", char.hp_current, min_value=0)
-    with c[1]: char.hp_max = labelled_number("Max", "hp_max", max(char.hp_max, char.hp_current))
-    with c[2]: char.hp_temp = labelled_number("Temp", "hp_temp", char.hp_temp, min_value=0)
-    st.caption("Use Current/Max/Temp for tracking. 'HP' in sidebar is kept for legacy export.")
+    # Card layout: Current/Max   Temp + controls
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    c = st.columns([1,1,1])
+    with c[0]:
+        char.hp_current = labelled_number("Current", "hp_current", char.hp_current, min_value=0)
+    with c[1]:
+        char.hp_max = labelled_number("Max", "hp_max", max(char.hp_max, char.hp_current))
+    with c[2]:
+        char.hp_temp = labelled_number("Temp", "hp_temp", char.hp_temp, min_value=0)
+
+    amt = st.number_input("Amount", key="hp_change", min_value=0, step=1, value=0)
+    b1, b2 = st.columns(2)
+    with b1:
+        if st.button("Heal"):
+            char.hp_current = min(char.hp_max, char.hp_current + amt)
+    with b2:
+        if st.button("Damage"):
+            char.hp_current = max(0, char.hp_current - amt)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with s5:
+    st.markdown("**Nonlethal Damage**")
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    labelled_number("Nonlethal", "nonlethal", st.session_state.get("nonlethal", 0), min_value=0)
+    st.session_state["nonlethal"] = st.session_state.get("nonlethal", 0)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("---")
 lcol, mcol, rcol = st.columns([2.4, 3, 2.6])
@@ -262,9 +298,28 @@ with lcol:
     st.markdown(f"<div class='card'>Fortitude: <b>{fort:+d}</b><br/>Reflex: <b>{ref:+d}</b><br/>Will: <b>{will:+d}</b><br/><span class='pill-label'>(base + ability + misc)</span></div>", unsafe_allow_html=True)
 
     st.markdown("**Senses**")
-    st.text_input("Vision / Notes (e.g., Darkvision 60 ft.)", key="senses_notes")
+    senses_text = st.session_state.get("senses_notes", "Add senses (e.g., Darkvision 60 ft.)")
+    st.markdown(f"<div class='card'>{senses_text}</div>", unsafe_allow_html=True)
 
 with mcol:
+    st.markdown("**Conditions / Defenses**")
+    cond = st.session_state.get("conditions", "Add Active Conditions")
+    defs = st.session_state.get("defenses", "Add Defenses (DR/Resistances)")
+    st.markdown(
+        f"<div class='card'><div class='subgrid' style='grid-template-columns:1fr 1fr;'>
+           <div class='boxed'>{cond}</div>
+           <div class='boxed'>{defs}</div>
+         </div></div>",
+        unsafe_allow_html=True,
+    )
+
+with rcol:
+    st.markdown("**Base Attack Bonus**")
+    melee = char.bab + ability_mod(ability_total(char, "STR"))
+    ranged = char.bab + ability_mod(ability_total(char, "DEX"))
+    grapple = char.bab + ability_mod(ability_total(char, "STR"))
+    st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{char.bab:+d}</div>
+                <div class='subgrid'><div class='boxed'>Melee {melee:+d}</div><div class='boxed'>Ranged {ranged:+d}</div><div class='boxed'>Grapple {grapple:+d}</div></div></div>", unsafe_allow_html=True)
     st.markdown("**Conditions / Defenses**")
     st.text_input("Active Conditions", key="conditions")
     st.text_input("Defenses (DR/Resistances)", key="defenses")
