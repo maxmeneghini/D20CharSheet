@@ -212,11 +212,70 @@ char.skin = labelled_text("Skin", "skin", char.skin)
 st.title("D&D 3.5 Character Sheet (UI Skeleton)")
 st.caption("Start with layout; wire rules & database later. All fields are local session state.")
 
+# ---------- Main Page (header + summary) ----------
+# Header bar
+hdr1, hdr2 = st.columns([1, 5])
+with hdr1:
+    st.image("https://placehold.co/96x96", caption="Portrait", width=96)
+with hdr2:
+    st.markdown(f"## {char.name or 'Unnamed'}")
+    st.caption(f"{char.race} {char.character_class} · Level {char.level} · Alignment {char.alignment}")
+
+# Ability cards row
+st.markdown("#### Abilities")
+cols = st.columns(6)
+for i, ab in enumerate(["STR","DEX","CON","INT","WIS","CHA"]):
+    with cols[i]:
+        total = ability_total(char, ab)
+        mod = ability_mod(total)
+        st.markdown(f"<div class='card ability-card'><div class='pill-label'>{ab}</div><div class='ability-mod'>{mod:+d}</div><div class='ability-score'>{total}</div></div>", unsafe_allow_html=True)
+
+st.markdown("---")
+# Status / quick stats row (desktop-first, responsive)
+s1, s2, s3, s4 = st.columns([1.2, 1.2, 1.6, 2.4])
+with s1:
+    st.markdown("**Initiative**")
+    ini_total = ability_mod(ability_total(char, "DEX")) + char.initiative_misc
+    st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{ini_total:+d}</div><div class='pill-label'>Dex mod + misc</div></div>", unsafe_allow_html=True)
+with s2:
+    st.markdown("**Speed**")
+    st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{char.speed}</div><div class='pill-label'>ft.</div></div>", unsafe_allow_html=True)
+with s3:
+    st.markdown("**Armor Class**")
+    ac_total = 10 + char.ac_armor + char.ac_shield + ability_mod(ability_total(char, "DEX")) + char.ac_natural + char.ac_deflection + char.ac_misc
+    st.markdown(f"<div class='card'><div class='big-number' style='text-align:center;'>{ac_total}</div><div class='subgrid'><div class='boxed'>Armor {char.ac_armor}</div><div class='boxed'>Shield {char.ac_shield}</div><div class='boxed'>Dex {ability_mod(ability_total(char, 'DEX')):+d}</div><div class='boxed'>Natural {char.ac_natural}</div><div class='boxed'>Defl. {char.ac_deflection}</div><div class='boxed'>Misc {char.ac_misc}</div></div></div>", unsafe_allow_html=True)
+with s4:
+    st.markdown("**Hit Points**")
+    c = st.columns(3)
+    with c[0]: char.hp_current = labelled_number("Current", "hp_current", char.hp_current, min_value=0)
+    with c[1]: char.hp_max = labelled_number("Max", "hp_max", max(char.hp_max, char.hp_current))
+    with c[2]: char.hp_temp = labelled_number("Temp", "hp_temp", char.hp_temp, min_value=0)
+    st.caption("Use Current/Max/Temp for tracking. 'HP' in sidebar is kept for legacy export.")
+
+st.markdown("---")
+lcol, mcol, rcol = st.columns([2.4, 3, 2.6])
+with lcol:
+    st.markdown("**Saving Throws**")
+    fort = char.fort_base + ability_mod(ability_total(char, "CON")) + char.save_misc
+    ref = char.ref_base + ability_mod(ability_total(char, "DEX")) + char.save_misc
+    will = char.will_base + ability_mod(ability_total(char, "WIS")) + char.save_misc
+    st.markdown(f"<div class='card'>Fortitude: <b>{fort:+d}</b><br/>Reflex: <b>{ref:+d}</b><br/>Will: <b>{will:+d}</b><br/><span class='pill-label'>(base + ability + misc)</span></div>", unsafe_allow_html=True)
+
+    st.markdown("**Senses**")
+    st.text_input("Vision / Notes (e.g., Darkvision 60 ft.)", key="senses_notes")
+
+with mcol:
+    st.markdown("**Conditions / Defenses**")
+    st.text_input("Active Conditions", key="conditions")
+    st.text_input("Defenses (DR/Resistances)", key="defenses")
+
+with rcol:
+    st.markdown("**Base Attack Bonus**")
+    st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{char.bab:+d}</div></div>", unsafe_allow_html=True)
+
 # ---------- Tabs ----------
-t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs([
-    "Overview",
-    "Abilities",
-    "Combat",
+tactions, tskills, tfeats, tspells, tgear, tnotes = st.tabs([
+    "Actions",
     "Skills",
     "Feats & Features",
     "Spells",
@@ -224,101 +283,11 @@ t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs([
     "Notes & Export",
 ])
 
-# ---------- Overview Tab ----------
-with t1:
-    # Header bar
-    hdr1, hdr2 = st.columns([1, 5])
-    with hdr1:
-        st.image("https://placehold.co/96x96", caption="Portrait", use_column_width=False)
-    with hdr2:
-        st.markdown(f"## {char.name or 'Unnamed'}")
-        st.caption(f"{char.race} {char.character_class} · Level {char.level} · Alignment {char.alignment}")
-
-    # Ability cards row
-    st.markdown("#### Abilities")
-    cols = st.columns(6)
-    for i, ab in enumerate(["STR","DEX","CON","INT","WIS","CHA"]):
-        with cols[i]:
-            total = ability_total(char, ab)
-            mod = ability_mod(total)
-            st.markdown(f"<div class='card ability-card'><div class='pill-label'>{ab}</div><div class='ability-mod'>{mod:+d}</div><div class='ability-score'>{total}</div></div>", unsafe_allow_html=True)
-
-    st.markdown("---")
-    # Status / quick stats row (desktop-first, responsive)
-    s1, s2, s3, s4 = st.columns([1.2, 1.2, 1.6, 2.4])
-    with s1:
-        st.markdown("**Initiative**")
-        ini_total = ability_mod(ability_total(char, "DEX")) + char.initiative_misc
-        st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{ini_total:+d}</div><div class='pill-label'>Dex mod + misc</div></div>", unsafe_allow_html=True)
-    with s2:
-        st.markdown("**Speed**")
-        st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{char.speed}</div><div class='pill-label'>ft.</div></div>", unsafe_allow_html=True)
-    with s3:
-        st.markdown("**Armor Class**")
-        ac_total = 10 + char.ac_armor + char.ac_shield + ability_mod(ability_total(char, "DEX")) + char.ac_natural + char.ac_deflection + char.ac_misc
-        st.markdown(f"<div class='card'><div class='big-number' style='text-align:center;'>{ac_total}</div><div class='subgrid'><div class='boxed'>Armor {char.ac_armor}</div><div class='boxed'>Shield {char.ac_shield}</div><div class='boxed'>Dex {ability_mod(ability_total(char, 'DEX')):+d}</div><div class='boxed'>Natural {char.ac_natural}</div><div class='boxed'>Defl. {char.ac_deflection}</div><div class='boxed'>Misc {char.ac_misc}</div></div></div>", unsafe_allow_html=True)
-    with s4:
-        st.markdown("**Hit Points**")
-        c = st.columns(3)
-        with c[0]: char.hp_current = labelled_number("Current", "hp_current", char.hp_current, min_value=0)
-        with c[1]: char.hp_max = labelled_number("Max", "hp_max", max(char.hp_max, char.hp_current))
-        with c[2]: char.hp_temp = labelled_number("Temp", "hp_temp", char.hp_temp, min_value=0)
-        st.caption("Use Current/Max/Temp for tracking. 'HP' in sidebar is kept for legacy export.")
-
-    st.markdown("---")
-    lcol, mcol, rcol = st.columns([2.4, 3, 2.6])
-    with lcol:
-        st.markdown("**Saving Throws**")
-        fort = char.fort_base + ability_mod(ability_total(char, "CON")) + char.save_misc
-        ref = char.ref_base + ability_mod(ability_total(char, "DEX")) + char.save_misc
-        will = char.will_base + ability_mod(ability_total(char, "WIS")) + char.save_misc
-        st.markdown(f"<div class='card'>Fortitude: <b>{fort:+d}</b><br/>Reflex: <b>{ref:+d}</b><br/>Will: <b>{will:+d}</b><br/><span class='pill-label'>(base + ability + misc)</span></div>", unsafe_allow_html=True)
-
-        st.markdown("**Senses**")
-        st.text_input("Vision / Notes (e.g., Darkvision 60 ft.)", key="senses_notes")
-
-        st.markdown("**Proficiencies**")
-        st.text_area("Weapons / Armor / Tools", key="proficiencies", height=120)
-
-    with mcol:
-        st.markdown("**Conditions / Defenses**")
-        st.text_input("Active Conditions", key="conditions")
-        st.text_input("Defenses (DR/Resistances)", key="defenses")
-        st.markdown("**Quick Notes**")
-        st.text_area("Notes", key="overview_notes", height=180)
-
-    with rcol:
-        st.markdown("**Base Attack Bonus**")
-        st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{char.bab:+d}</div></div>", unsafe_allow_html=True)
-        st.markdown("**Weapons (summary)**")
-        st.text_input("Weapon 1", key="ov_wpn1", value=st.session_state.get("wpn1","Longsword"))
-        st.text_input("Weapon 2", key="ov_wpn2", value=st.session_state.get("wpn2","Shortbow"))
-
-# ---------- Abilities Tab ----------
-with t2:
-    st.markdown("### Ability Scores")
-    grid = st.columns(6)
-    labels = ["STR", "DEX", "CON", "INT", "WIS", "CHA"]
-    base_keys = ["str_base", "dex_base", "con_base", "int_base", "wis_base", "cha_base"]
-    racial_keys = ["str_racial", "dex_racial", "con_racial", "int_racial", "wis_racial", "cha_racial"]
-
-    for i, (lab, base_k, racial_k) in enumerate(zip(labels, base_keys, racial_keys)):
-        with grid[i]:
-            st.markdown(f"**{lab}**")
-            base = labelled_number("Base", base_k, getattr(char, base_k), min_value=1, max_value=30)
-            racial = labelled_number("Racial Adj", racial_k, getattr(char, racial_k), min_value=-10, max_value=10)
-            total = int(base) + int(racial)
-            mod = ability_mod(total)
-            st.markdown(
-                f"<div class='stat-box'>Total: <b>{total}</b><br/>Mod: <b>{mod:+d}</b></div>",
-                unsafe_allow_html=True,
-            )
-            setattr(char, base_k, base)
-            setattr(char, racial_k, racial)
-
-# ---------- Combat Tab ----------
-with t3:
-    st.markdown("### Attacks")
+# (Overview tab removed; main page rendered above tabs) 
+# (Abilities tab removed; ability editing happens on main page)
+# ---------- Actions Tab ----------
+with tactions:
+    st.markdown("### Actions & Attacks")
     a1, a2, a3 = st.columns(3)
     with a1:
         labelled_text("Primary Weapon", "wpn1", "Longsword")
@@ -350,7 +319,7 @@ with t3:
             })
 
 # ---------- Skills Tab ----------
-with t4:
+with tskills:
     st.markdown("### Skills — D&D 3.5 list (editable)")
     SKILLS_35 = [
         ("Appraise","INT"),("Balance","DEX"),("Bluff","CHA"),("Climb","STR"),("Concentration","CON"),
@@ -381,14 +350,14 @@ with t4:
     st.session_state.skills_table = edited
 
 # ---------- Feats & Features Tab ----------
-with t5:
+with tfeats:
     st.markdown("### Feats & Class Features")
     feats = taglist("feats_tags", "Feats (type and press Add)")
     features = taglist("features_tags", "Class Features")
     st.caption("These will later be validated against prerequisites from the database.")
 
 # ---------- Spells Tab ----------
-with t6:
+with tspells:
     st.markdown("### Spells")
     cls = char.character_class
     st.write("Casting Class:", cls)
@@ -397,7 +366,7 @@ with t6:
     st.text_area("Spellbook / Notes", key="spellbook_notes")
 
 # ---------- Gear & Wealth Tab ----------
-with t7:
+with tgear:
     st.markdown("### Gear & Wealth")
     taglist("languages", "Languages")
     st.text_area("Weapons & Armor", key="gear_weapons", height=100)
@@ -405,7 +374,7 @@ with t7:
     st.number_input("Wealth (gp)", key="wealth_gp", value=0, step=1)
 
 # ---------- Notes & Export Tab ----------
-with t8:
+with tnotes:
     st.markdown("### Notes")
     st.text_area("Background & Personality", key="notes_bg", height=180)
     st.text_area("Allies & Organizations", key="notes_allies", height=120)
@@ -442,4 +411,4 @@ with t8:
         mime="application/json",
     )
 
-    st.caption("For a print-friendly sheet, use the browser print dialog on the Overview/Abilities/Combat tabs.")
+    st.caption("For a print-friendly sheet, use the browser print dialog on the Main page and Actions tab.")
