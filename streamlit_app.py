@@ -15,18 +15,28 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Minimal CSS for tighter spacing + print-friendly look
+# Minimal CSS for tighter spacing + print-friendly look and 5e-like cards
 st.markdown(
     """
     <style>
-      .small-label { font-size: 0.85rem; color: #555; margin-bottom: 0.15rem; }
-      .stat-box { border: 1px solid #ddd; border-radius: 10px; padding: 0.65rem; background: #fff; }
+      :root{ --accent:#c62828; --ink:#222; --muted:#666; --ring:#f3d6cf; }
+      .small-label { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.15rem; }
       .section { border: 1px solid #e6e6e6; border-radius: 14px; padding: 1rem; margin-bottom: 1rem; background: #fafafa; }
+      .card { border: 2px solid var(--accent); border-radius: 14px; padding: .8rem; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,.04) inset; }
+      .ability-card { text-align:center; }
+      .ability-mod { font-size: 1.8rem; font-weight: 700; line-height: 1; color: var(--ink);}
+      .ability-score { font-size: .9rem; color: var(--muted); }
+      .pill-label{ font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
+      .big-number{ font-size:1.6rem; font-weight:700;}
+      .subgrid{ display:grid; grid-template-columns: repeat(3,1fr); gap:.5rem; }
+      .tight > div[data-testid="stVerticalBlock"]{ padding-top:.3rem; padding-bottom:.3rem;}
+      .boxed{ border:1px dashed #ddd; border-radius:10px; padding:.5rem;}
+      @media (max-width: 1100px){ .subgrid{ grid-template-columns: repeat(2,1fr);} }
       @media print {
-        section.main > div { padding-top: 0 !important; }
-        header { display: none; }
-        .stButton>button { display: none; }
-        .section { break-inside: avoid; }
+        @page { size: A4; margin: 10mm; }
+        body { -webkit-print-color-adjust: exact; color-adjust: exact; }
+        header, [data-testid="baseButton-secondary"] { display:none !important; }
+        .card, .section{ break-inside: avoid; }
       }
     </style>
     """,
@@ -40,6 +50,13 @@ def ability_mod(score: int) -> int:
         return (int(score) - 10) // 2
     except Exception:
         return 0
+
+ABI_MAP = {"STR":"str","DEX":"dex","CON":"con","INT":"int","WIS":"wis","CHA":"cha"}
+
+
+def ability_total(char, ab_code: str) -> int:
+    code = ABI_MAP[ab_code]
+    return getattr(char, f"{code}_base") + getattr(char, f"{code}_racial")
 
 
 def labelled_number(label: str, key: str, value: int = 0, step: int = 1, min_value: int | None = None, max_value: int | None = None):
@@ -128,6 +145,10 @@ class Character:
     ac_deflection: int = 0
     ac_misc: int = 0
     initiative_misc: int = 0
+    # HP breakdown for 3.5-style tracking
+    hp_current: int = 0
+    hp_max: int = 0
+    hp_temp: int = 0
 
     # Saves (base values will come from class table)
     fort_base: int = 0
@@ -205,36 +226,73 @@ t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs([
 
 # ---------- Overview Tab ----------
 with t1:
-    st.markdown("### Overview")
-    c1, c2, c3, c4 = st.columns([2, 2, 2, 2])
-    with c1:
-        labelled_text("Deity", "deity", char.deity)
-        labelled_text("Size", "size", char.size)
-        labelled_number("Speed (ft)", "speed", char.speed, step=5)
-    with c2:
-        labelled_text("Hit Die", "hit_die", char.hit_die)
-        labelled_number("HP", "hp", char.hp)
-        labelled_number("Initiative (misc)", "initiative_misc", char.initiative_misc)
-    with c3:
-        labelled_number("BAB", "bab", char.bab)
-        labelled_number("Fort Base", "fort_base", char.fort_base)
-        labelled_number("Ref Base", "ref_base", char.ref_base)
-    with c4:
-        labelled_number("Will Base", "will_base", char.will_base)
-        labelled_number("Save Misc (all)", "save_misc", char.save_misc)
+    # Header bar
+    hdr1, hdr2 = st.columns([1, 5])
+    with hdr1:
+        st.image("https://placehold.co/96x96", caption="Portrait", use_column_width=False)
+    with hdr2:
+        st.markdown(f"## {char.name or 'Unnamed'}")
+        st.caption(f"{char.race} {char.character_class} · Level {char.level} · Alignment {char.alignment}")
 
-    st.markdown("### Armor Class (AC)")
-    ac1, ac2, ac3, ac4, ac5 = st.columns(5)
-    with ac1:
-        labelled_number("Armor", "ac_armor", char.ac_armor)
-    with ac2:
-        labelled_number("Shield", "ac_shield", char.ac_shield)
-    with ac3:
-        labelled_number("Natural", "ac_natural", char.ac_natural)
-    with ac4:
-        labelled_number("Deflection", "ac_deflection", char.ac_deflection)
-    with ac5:
-        labelled_number("Misc", "ac_misc", char.ac_misc)
+    # Ability cards row
+    st.markdown("#### Abilities")
+    cols = st.columns(6)
+    for i, ab in enumerate(["STR","DEX","CON","INT","WIS","CHA"]):
+        with cols[i]:
+            total = ability_total(char, ab)
+            mod = ability_mod(total)
+            st.markdown(f"<div class='card ability-card'><div class='pill-label'>{ab}</div><div class='ability-mod'>{mod:+d}</div><div class='ability-score'>{total}</div></div>", unsafe_allow_html=True)
+
+    st.markdown("---")
+    # Status / quick stats row (desktop-first, responsive)
+    s1, s2, s3, s4 = st.columns([1.2, 1.2, 1.6, 2.4])
+    with s1:
+        st.markdown("**Initiative**")
+        ini_total = ability_mod(ability_total(char, "DEX")) + char.initiative_misc
+        st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{ini_total:+d}</div><div class='pill-label'>Dex mod + misc</div></div>", unsafe_allow_html=True)
+    with s2:
+        st.markdown("**Speed**")
+        st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{char.speed}</div><div class='pill-label'>ft.</div></div>", unsafe_allow_html=True)
+    with s3:
+        st.markdown("**Armor Class**")
+        ac_total = 10 + char.ac_armor + char.ac_shield + ability_mod(ability_total(char, "DEX")) + char.ac_natural + char.ac_deflection + char.ac_misc
+        st.markdown(f"<div class='card'><div class='big-number' style='text-align:center;'>{ac_total}</div><div class='subgrid'><div class='boxed'>Armor {char.ac_armor}</div><div class='boxed'>Shield {char.ac_shield}</div><div class='boxed'>Dex {ability_mod(ability_total(char, 'DEX')):+d}</div><div class='boxed'>Natural {char.ac_natural}</div><div class='boxed'>Defl. {char.ac_deflection}</div><div class='boxed'>Misc {char.ac_misc}</div></div></div>", unsafe_allow_html=True)
+    with s4:
+        st.markdown("**Hit Points**")
+        c = st.columns(3)
+        with c[0]: char.hp_current = labelled_number("Current", "hp_current", char.hp_current, min_value=0)
+        with c[1]: char.hp_max = labelled_number("Max", "hp_max", max(char.hp_max, char.hp_current))
+        with c[2]: char.hp_temp = labelled_number("Temp", "hp_temp", char.hp_temp, min_value=0)
+        st.caption("Use Current/Max/Temp for tracking. 'HP' in sidebar is kept for legacy export.")
+
+    st.markdown("---")
+    lcol, mcol, rcol = st.columns([2.4, 3, 2.6])
+    with lcol:
+        st.markdown("**Saving Throws**")
+        fort = char.fort_base + ability_mod(ability_total(char, "CON")) + char.save_misc
+        ref = char.ref_base + ability_mod(ability_total(char, "DEX")) + char.save_misc
+        will = char.will_base + ability_mod(ability_total(char, "WIS")) + char.save_misc
+        st.markdown(f"<div class='card'>Fortitude: <b>{fort:+d}</b><br/>Reflex: <b>{ref:+d}</b><br/>Will: <b>{will:+d}</b><br/><span class='pill-label'>(base + ability + misc)</span></div>", unsafe_allow_html=True)
+
+        st.markdown("**Senses**")
+        st.text_input("Vision / Notes (e.g., Darkvision 60 ft.)", key="senses_notes")
+
+        st.markdown("**Proficiencies**")
+        st.text_area("Weapons / Armor / Tools", key="proficiencies", height=120)
+
+    with mcol:
+        st.markdown("**Conditions / Defenses**")
+        st.text_input("Active Conditions", key="conditions")
+        st.text_input("Defenses (DR/Resistances)", key="defenses")
+        st.markdown("**Quick Notes**")
+        st.text_area("Notes", key="overview_notes", height=180)
+
+    with rcol:
+        st.markdown("**Base Attack Bonus**")
+        st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{char.bab:+d}</div></div>", unsafe_allow_html=True)
+        st.markdown("**Weapons (summary)**")
+        st.text_input("Weapon 1", key="ov_wpn1", value=st.session_state.get("wpn1","Longsword"))
+        st.text_input("Weapon 2", key="ov_wpn2", value=st.session_state.get("wpn2","Shortbow"))
 
 # ---------- Abilities Tab ----------
 with t2:
@@ -293,23 +351,34 @@ with t3:
 
 # ---------- Skills Tab ----------
 with t4:
-    st.markdown("### Skills (placeholder table; wire to DB)")
-    # A tiny starter skill list; replace with DB lookup
-    if st.session_state.get("skills_table") is None:
+    st.markdown("### Skills — D&D 3.5 list (editable)")
+    SKILLS_35 = [
+        ("Appraise","INT"),("Balance","DEX"),("Bluff","CHA"),("Climb","STR"),("Concentration","CON"),
+        ("Craft (Alchemy)","INT"),("Craft (Armorsmithing)","INT"),("Craft (Weaponsmithing)","INT"),("Craft (Other)","INT"),
+        ("Decipher Script","INT"),("Diplomacy","CHA"),("Disable Device","INT"),("Disguise","CHA"),("Escape Artist","DEX"),
+        ("Forgery","INT"),("Gather Information","CHA"),("Handle Animal","CHA"),("Heal","WIS"),("Hide","DEX"),
+        ("Intimidate","CHA"),("Jump","STR"),
+        ("Knowledge (Arcana)","INT"),("Knowledge (Architecture)","INT"),("Knowledge (Dungeoneering)","INT"),("Knowledge (Geography)","INT"),
+        ("Knowledge (History)","INT"),("Knowledge (Local)","INT"),("Knowledge (Nature)","INT"),("Knowledge (Nobility)","INT"),
+        ("Knowledge (Religion)","INT"),("Knowledge (The Planes)","INT"),
+        ("Listen","WIS"),("Move Silently","DEX"),("Open Lock","DEX"),("Perform","CHA"),("Profession","WIS"),
+        ("Ride","DEX"),("Search","INT"),("Sense Motive","WIS"),("Sleight of Hand","DEX"),("Speak Language","—"),
+        ("Spellcraft","INT"),("Spot","WIS"),("Survival","WIS"),("Swim","STR"),("Tumble","DEX"),("Use Magic Device","CHA"),("Use Rope","DEX")
+    ]
+    if st.session_state.get("skills_table") is None or st.session_state.get("skills_table_seed") != "3.5":
         st.session_state.skills_table = [
-            {"Skill": "Balance", "Ability": "DEX", "Ranks": 0, "Misc": 0, "Class": True},
-            {"Skill": "Climb", "Ability": "STR", "Ranks": 0, "Misc": 0, "Class": True},
-            {"Skill": "Concentration", "Ability": "CON", "Ranks": 0, "Misc": 0, "Class": True},
-            {"Skill": "Hide", "Ability": "DEX", "Ranks": 0, "Misc": 0, "Class": False},
-            {"Skill": "Move Silently", "Ability": "DEX", "Ranks": 0, "Misc": 0, "Class": False},
-            {"Skill": "Spellcraft", "Ability": "INT", "Ranks": 0, "Misc": 0, "Class": False},
+            {"Skill": s, "Ability": ab, "Ranks": 0, "Misc": 0, "Class": True} for s, ab in SKILLS_35
         ]
-    st.session_state.skills_table = st.data_editor(
+        st.session_state.skills_table_seed = "3.5"
+
+    edited = st.data_editor(
         st.session_state.skills_table,
         num_rows="dynamic",
         use_container_width=True,
         key="skills_editor",
+        column_config={"Class": st.column_config.CheckboxColumn("Class Skill")},
     )
+    st.session_state.skills_table = edited
 
 # ---------- Feats & Features Tab ----------
 with t5:
