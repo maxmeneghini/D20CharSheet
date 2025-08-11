@@ -242,30 +242,31 @@ for i, ab in enumerate(["STR","DEX","CON","INT","WIS","CHA"]):
 with row_top[6]:
     st.markdown("**Hit Points**")
     with st.container(border=True):
-        upper = st.columns([2,1,1])
-        with upper[0]:
-            st.markdown(
-                f"""
-                <div class='boxed'>
-                  <div class='small-label'>Current / Max</div>
-                  <div class='big-number'>{char.hp_current} / {char.hp_max}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with upper[1]:
+        # Layout similar to the reference: left Heal/Damage inputs, then Current, Max, Temp, Nonlethal
+        hpcols = st.columns([0.9, 1, 1, 0.9, 0.9])
+        with hpcols[0]:
+            heal_val = st.number_input("Heal", key="hp_heal", min_value=0, step=1, value=st.session_state.get("hp_heal", 0))
+            dmg_val = st.number_input("Damage", key="hp_damage", min_value=0, step=1, value=st.session_state.get("hp_damage", 0))
+        with hpcols[1]:
+            st.markdown(f"<div class='small-label'>Current</div><div class='big-number'>{char.hp_current}</div>", unsafe_allow_html=True)
+        with hpcols[2]:
+            st.markdown(f"<div class='small-label'>Max</div><div class='big-number'>{char.hp_max}</div>", unsafe_allow_html=True)
+        with hpcols[3]:
             char.hp_temp = labelled_number("Temp", "hp_temp", char.hp_temp, min_value=0)
-        with upper[2]:
+        with hpcols[4]:
             labelled_number("Nonlethal", "nonlethal", st.session_state.get("nonlethal", 0), min_value=0)
 
-        amt = st.number_input("Amount", key="hp_change", min_value=0, step=1, value=0)
-        b1, b2 = st.columns(2)
-        with b1:
-            if st.button("Heal"):
-                char.hp_current = min(char.hp_max, char.hp_current + amt)
-        with b2:
-            if st.button("Damage"):
-                char.hp_current = max(0, char.hp_current - amt)
+        # Apply effects when values change (difference-based, no buttons)
+        prev_heal = st.session_state.get("_prev_hp_heal", 0)
+        prev_dmg = st.session_state.get("_prev_hp_damage", 0)
+        if heal_val > prev_heal:
+            delta_h = heal_val - prev_heal
+            char.hp_current = min(char.hp_max, char.hp_current + delta_h)
+        if dmg_val > prev_dmg:
+            delta_d = dmg_val - prev_dmg
+            char.hp_current = max(0, char.hp_current - delta_d)
+        st.session_state["_prev_hp_heal"] = heal_val
+        st.session_state["_prev_hp_damage"] = dmg_val
 
 st.markdown("---")
 # Second row layout
