@@ -41,18 +41,18 @@ st.markdown(
       }
       /* Streamlit border containers as white cards */
       div[data-testid="stVerticalBlockBorderWrapper"]{
-        background:#fff; border:2px solid var(--accent); border-radius:14px; padding:.6rem;
+        background:#fff; border:2px solid var(--accent); border-radius:14px; padding:.35rem;
       }
       div[data-testid="stVerticalBlockBorderWrapper"] *{ color:#000 !important; }
-    .hp-first .stButton>button{ padding:.25rem .4rem; font-size:.82rem; border-radius:.5rem; height:32px; }
-      .hp-first div[data-testid="stNumberInput"] input{ height:28px; font-size:.9rem; }
-      .hp-first > div[data-testid="stVerticalBlock"]{ padding-top:.12rem; padding-bottom:.12rem; } .hp-first .stNumberInput{ margin:0 !important; } .hp-first .stButton{ margin:0 !important; }
+    .hp-first .stButton>button{ padding:.2rem .35rem; font-size:.72rem; border-radius:.45rem; height:28px; line-height:1; }
+      .hp-first div[data-testid="stNumberInput"] input{ height:26px; font-size:.85rem; padding:2px 6px; }
+      .hp-first [data-testid="stVerticalBlock"]{ padding-top:.06rem; padding-bottom:.06rem; margin:0 !important; } .hp-first .stNumberInput{ margin:0 !important; } .hp-first .stButton{ margin:0 !important; } .hp-first .stNumberInput{ margin:0 !important; } .hp-first .stButton{ margin:0 !important; }
       .hp-mid{ display:flex; flex-direction:column; justify-content:space-between; height:100%; }
-      .hp-mid .labels{ display:flex; justify-content:center; gap:2.5rem; text-transform:uppercase; font-size:.95rem; letter-spacing:.08em; color:#333; margin-bottom:.2rem;}
-      .hp-mid .hp-footer{ text-transform:uppercase; font-weight:700; font-size:1.05rem; color:#333; text-align:center; }
-      .hp-mid .big-number{ font-size:1.9rem; }
-      .hp-side div[data-testid="stNumberInput"]{ max-width:120px; margin:0 !important; } .hp-side input{ height:28px; font-size:.9rem; }
-      .hp-side .small-label{ margin-bottom:.15rem; font-size:.75rem; }
+      .hp-mid .labels{ display:flex; justify-content:center; gap:3rem; text-transform:uppercase; font-size:.95rem; letter-spacing:.08em; color:#333; margin-bottom:.1rem; }
+      .hp-mid .hp-footer{ text-transform:uppercase; font-weight:700; font-size:1.1rem; color:#333; text-align:center; margin-top:.1rem; }
+      .hp-mid .big-number{ font-size:1.7rem; }
+      .hp-side div[data-testid="stNumberInput"]{ max-width:100px; margin:0 !important; } .hp-side input{ height:26px; font-size:.85rem; padding:2px 6px; } .hp-side input{ height:28px; font-size:.9rem; }
+      .hp-side .small-label{ margin-bottom:.12rem; font-size:.72rem; }
       </style>
     """,
     unsafe_allow_html=True,
