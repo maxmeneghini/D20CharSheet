@@ -261,14 +261,20 @@ with s3:
     )
 with s4:
     st.markdown("**Hit Points**")
-    # Card layout: Current/Max   Temp + controls
+    # Card layout: Current/Max   Temp + controls (Current/Max are display-only)
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    c = st.columns([1,1,1])
-    with c[0]:
-        char.hp_current = labelled_number("Current", "hp_current", char.hp_current, min_value=0)
-    with c[1]:
-        char.hp_max = labelled_number("Max", "hp_max", max(char.hp_max, char.hp_current))
-    with c[2]:
+    row = st.columns([2,1])
+    with row[0]:
+        st.markdown(
+            f"""
+            <div class='boxed'>
+              <div class='small-label'>Current / Max</div>
+              <div class='big-number'>{char.hp_current} / {char.hp_max}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with row[1]:
         char.hp_temp = labelled_number("Temp", "hp_temp", char.hp_temp, min_value=0)
 
     amt = st.number_input("Amount", key="hp_change", min_value=0, step=1, value=0)
@@ -283,10 +289,9 @@ with s4:
 
 with s5:
     st.markdown("**Nonlethal Damage**")
-st.markdown("<div class='card'>", unsafe_allow_html=True)
-# Let the widget manage its own session state; no manual assignment afterward
-labelled_number("Nonlethal", "nonlethal", st.session_state.get("nonlethal", 0), min_value=0)
-st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    labelled_number("Nonlethal", "nonlethal", st.session_state.get("nonlethal", 0), min_value=0)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("---")
 lcol, mcol, rcol = st.columns([2.4, 3, 2.6])
