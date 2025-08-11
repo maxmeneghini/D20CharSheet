@@ -283,10 +283,10 @@ with s4:
 
 with s5:
     st.markdown("**Nonlethal Damage**")
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    labelled_number("Nonlethal", "nonlethal", st.session_state.get("nonlethal", 0), min_value=0)
-    st.session_state["nonlethal"] = st.session_state.get("nonlethal", 0)
-    st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("<div class='card'>", unsafe_allow_html=True)
+# Let the widget manage its own session state; no manual assignment afterward
+labelled_number("Nonlethal", "nonlethal", st.session_state.get("nonlethal", 0), min_value=0)
+st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("---")
 lcol, mcol, rcol = st.columns([2.4, 3, 2.6])
