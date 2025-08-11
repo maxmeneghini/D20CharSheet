@@ -44,7 +44,16 @@ st.markdown(
         background:#fff; border:2px solid var(--accent); border-radius:14px; padding:.8rem;
       }
       div[data-testid="stVerticalBlockBorderWrapper"] *{ color:#000 !important; }
-    </style>
+    .hp-first button{ padding:.3rem .4rem; font-size:.8rem; border-radius:.5rem;}
+      .hp-first div[data-testid="stNumberInput"] input{ height:32px; }
+      .hp-first > div[data-testid="stVerticalBlock"]{ padding-top:.2rem; padding-bottom:.2rem; }
+      .hp-mid{ display:flex; flex-direction:column; justify-content:space-between; height:100%; }
+      .hp-mid .labels{ display:flex; justify-content:space-between; text-transform:uppercase; font-size:.9rem; letter-spacing:.08em; color:#333; }
+      .hp-mid .hp-footer{ text-transform:uppercase; font-weight:700; font-size:.9rem; color:#333; text-align:center; }
+      .hp-mid .big-number{ font-size:2rem; }
+      .hp-side div[data-testid="stNumberInput"]{ max-width:140px; }
+      .hp-side .small-label{ margin-bottom:.2rem; }
+      </style>
     """,
     unsafe_allow_html=True,
 )
@@ -243,37 +252,45 @@ with row_top[6]:
     # Hit Points card (3 columns): [Heal/Input/Damage] | [Current/Max + title] | [Temp + Nonlethal]
     with st.container(border=True):
         hpcols = st.columns([1.0, 2.2, 1.1])
-        # Column 1: Heal / Amount / Damage
+        # Column 1: Heal / Amount / Damage (uniform width, compact)
         with hpcols[0]:
-            if st.button("Heal", key="btn_heal"):
+            st.markdown("<div class='hp-first'>", unsafe_allow_html=True)
+            if st.button("Heal", key="btn_heal", use_container_width=True):
                 amt = int(st.session_state.get("hp_amount", 0) or 0)
                 char.hp_current = min(char.hp_max, char.hp_current + amt)
             st.number_input(" ", key="hp_amount", min_value=0, step=1, label_visibility="collapsed")
-            if st.button("Damage", key="btn_damage"):
+            if st.button("Damage", key="btn_damage", use_container_width=True):
                 amt = int(st.session_state.get("hp_amount", 0) or 0)
                 char.hp_current = max(0, char.hp_current - amt)
-        # Column 2: Current / Max and bottom title
+            st.markdown("</div>", unsafe_allow_html=True)
+        # Column 2: Current / Max centered; title at bottom
         with hpcols[1]:
             st.markdown(
                 f"""
-                <div style='text-align:center;'>
-                  <div class='pill-label' style='display:flex;justify-content:space-between;'>
-                    <span>Current</span><span>Max</span>
+                <div class='hp-mid'>
+                  <div>
+                    <div class='labels'><span>Current</span><span>Max</span></div>
+                    <div style='display:flex;justify-content:center;gap:.6rem;align-items:baseline;'>
+                      <span class='big-number'>{char.hp_current}</span>
+                      <span class='big-number'>/</span>
+                      <span class='big-number'>{char.hp_max}</span>
+                    </div>
                   </div>
-                  <div style='display:flex;justify-content:center;gap:.6rem;align-items:baseline;'>
-                    <span class='big-number'>{char.hp_current}</span>
-                    <span class='big-number'>/</span>
-                    <span class='big-number'>{char.hp_max}</span>
-                  </div>
-                  <div class='pill-label' style='text-transform:uppercase;margin-top:.35rem;'>Hit Points</div>
+                  <div class='hp-footer'>Hit Points</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
-        # Column 3: Temp and Nonlethal
+        # Column 3: Temp and Nonlethal (narrow inputs, tighter spacing)
         with hpcols[2]:
-            char.hp_temp = labelled_number("Temp", "hp_temp", char.hp_temp, min_value=0)
-            labelled_number("Nonlethal", "nonlethal", st.session_state.get("nonlethal", 0), min_value=0)
+            st.markdown("<div class='hp-side'>", unsafe_allow_html=True)
+            ctemp = st.columns([0.75, 0.25])
+            with ctemp[0]:
+                char.hp_temp = labelled_number("Temp", "hp_temp", char.hp_temp, min_value=0)
+            cnon = st.columns([0.75, 0.25])
+            with cnon[0]:
+                labelled_number("Nonlethal", "nonlethal", st.session_state.get("nonlethal", 0), min_value=0)
+            st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("---")
 # Second row layout
