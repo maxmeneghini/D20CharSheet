@@ -41,18 +41,18 @@ st.markdown(
       }
       /* Streamlit border containers as white cards */
       div[data-testid="stVerticalBlockBorderWrapper"]{
-        background:#fff; border:2px solid var(--accent); border-radius:14px; padding:.8rem;
+        background:#fff; border:2px solid var(--accent); border-radius:14px; padding:.6rem;
       }
       div[data-testid="stVerticalBlockBorderWrapper"] *{ color:#000 !important; }
-    .hp-first button{ padding:.3rem .4rem; font-size:.8rem; border-radius:.5rem;}
-      .hp-first div[data-testid="stNumberInput"] input{ height:32px; }
-      .hp-first > div[data-testid="stVerticalBlock"]{ padding-top:.2rem; padding-bottom:.2rem; }
+    .hp-first .stButton>button{ padding:.25rem .4rem; font-size:.82rem; border-radius:.5rem; height:32px; }
+      .hp-first div[data-testid="stNumberInput"] input{ height:28px; font-size:.9rem; }
+      .hp-first > div[data-testid="stVerticalBlock"]{ padding-top:.12rem; padding-bottom:.12rem; } .hp-first .stNumberInput{ margin:0 !important; } .hp-first .stButton{ margin:0 !important; }
       .hp-mid{ display:flex; flex-direction:column; justify-content:space-between; height:100%; }
-      .hp-mid .labels{ display:flex; justify-content:space-between; text-transform:uppercase; font-size:.9rem; letter-spacing:.08em; color:#333; }
-      .hp-mid .hp-footer{ text-transform:uppercase; font-weight:700; font-size:.9rem; color:#333; text-align:center; }
-      .hp-mid .big-number{ font-size:2rem; }
-      .hp-side div[data-testid="stNumberInput"]{ max-width:140px; }
-      .hp-side .small-label{ margin-bottom:.2rem; }
+      .hp-mid .labels{ display:flex; justify-content:center; gap:2.5rem; text-transform:uppercase; font-size:.95rem; letter-spacing:.08em; color:#333; margin-bottom:.2rem;}
+      .hp-mid .hp-footer{ text-transform:uppercase; font-weight:700; font-size:1.05rem; color:#333; text-align:center; }
+      .hp-mid .big-number{ font-size:1.9rem; }
+      .hp-side div[data-testid="stNumberInput"]{ max-width:120px; margin:0 !important; } .hp-side input{ height:28px; font-size:.9rem; }
+      .hp-side .small-label{ margin-bottom:.15rem; font-size:.75rem; }
       </style>
     """,
     unsafe_allow_html=True,
