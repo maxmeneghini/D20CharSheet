@@ -39,6 +39,11 @@ st.markdown(
         header, [data-testid="baseButton-secondary"] { display:none !important; }
         .card, .section{ break-inside: avoid; }
       }
+      /* Streamlit border containers as white cards */
+      div[data-testid="stVerticalBlockBorderWrapper"]{
+        background:#fff; border:2px solid var(--accent); border-radius:14px; padding:.8rem;
+      }
+      div[data-testid="stVerticalBlockBorderWrapper"] *{ color:#000 !important; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -261,33 +266,36 @@ with s3:
     )
 with s4:
     st.markdown("**Hit Points**")
-    # Card layout: Current/Max   Temp + controls (Current/Max are display-only)
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    row = st.columns([2,1])
-    with row[0]:
-        st.markdown(
-            f"""
-            <div class='boxed'>
-              <div class='small-label'>Current / Max</div>
-              <div class='big-number'>{char.hp_current} / {char.hp_max}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with row[1]:
-        char.hp_temp = labelled_number("Temp", "hp_temp", char.hp_temp, min_value=0)
+    # Use Streamlit's bordered container so widgets stay visually inside the card
+    with st.container(border=True):
+        row = st.columns([2,1])
+        with row[0]:
+            st.markdown(
+                f"""
+                <div class='boxed'>
+                  <div class='small-label'>Current / Max</div>
+                  <div class='big-number'>{char.hp_current} / {char.hp_max}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with row[1]:
+            char.hp_temp = labelled_number("Temp", "hp_temp", char.hp_temp, min_value=0)
 
-    amt = st.number_input("Amount", key="hp_change", min_value=0, step=1, value=0)
-    b1, b2 = st.columns(2)
-    with b1:
-        if st.button("Heal"):
-            char.hp_current = min(char.hp_max, char.hp_current + amt)
-    with b2:
-        if st.button("Damage"):
-            char.hp_current = max(0, char.hp_current - amt)
-    st.markdown("</div>", unsafe_allow_html=True)
+        amt = st.number_input("Amount", key="hp_change", min_value=0, step=1, value=0)
+        b1, b2 = st.columns(2)
+        with b1:
+            if st.button("Heal"):
+                char.hp_current = min(char.hp_max, char.hp_current + amt)
+        with b2:
+            if st.button("Damage"):
+                char.hp_current = max(0, char.hp_current - amt)
 
 with s5:
+    st.markdown("**Nonlethal Damage**")
+    with st.container(border=True):
+        labelled_number("Nonlethal", "nonlethal", st.session_state.get("nonlethal", 0), min_value=0)
+
     st.markdown("**Nonlethal Damage**")
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     labelled_number("Nonlethal", "nonlethal", st.session_state.get("nonlethal", 0), min_value=0)
