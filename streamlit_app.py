@@ -22,11 +22,11 @@ st.markdown(
       :root{ --accent:#c62828; --ink:#222; --muted:#666; --ring:#f3d6cf; }
       .small-label { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.15rem; }
       .section { border: 1px solid #e6e6e6; border-radius: 14px; padding: 1rem; margin-bottom: 1rem; background: #fafafa; }
-      .card { border: 2px solid var(--accent); border-radius: 14px; padding: .8rem; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,.04) inset; color:#000; }
+      .card { border: 2px solid var(--accent); border-radius: 12px; padding: .6rem; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,.04) inset; color:#000; }
       .card * { color:#000 !important; }
       .ability-card { text-align:center; }
-      .ability-mod { font-size: 1.8rem; font-weight: 700; line-height: 1; color: var(--ink);}
-      .ability-score { font-size: .9rem; color: var(--muted); }
+      .ability-mod { font-size: 1.4rem; font-weight: 700; line-height: 1; color: var(--ink);}
+      .ability-score { font-size: .8rem; color: var(--muted); }
       .pill-label{ font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
       .big-number{ font-size:1.6rem; font-weight:700;}
       .subgrid{ display:grid; grid-template-columns: repeat(3,1fr); gap:.5rem; }
@@ -227,49 +227,23 @@ with hdr2:
     st.markdown(f"## {char.name or 'Unnamed'}")
     st.caption(f"{char.race} {char.character_class} · Level {char.level} · Alignment {char.alignment}")
 
-# Ability cards row
-st.markdown("#### Abilities")
-cols = st.columns(6)
+# Ability cards + Hit Points row (no title)
+# Smaller ability cards and HP in the same row
+row_top = st.columns([1,1,1,1,1,1,2.4])
 for i, ab in enumerate(["STR","DEX","CON","INT","WIS","CHA"]):
-    with cols[i]:
+    with row_top[i]:
         total = ability_total(char, ab)
         mod = ability_mod(total)
-        st.markdown(f"<div class='card ability-card'><div class='pill-label'>{ab}</div><div class='ability-mod'>{mod:+d}</div><div class='ability-score'>{total}</div></div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='card ability-card'><div class='pill-label'>{ab}</div><div class='ability-mod'>{mod:+d}</div><div class='ability-score'>{total}</div></div>",
+            unsafe_allow_html=True,
+        )
 
-st.markdown("---")
-# Status / quick stats row (desktop-first, responsive)
-s1, s2, s3, s4, s5 = st.columns([1.2, 1.2, 1.6, 2.6, 1.4])
-with s1:
-    st.markdown("**Initiative**")
-    ini_total = ability_mod(ability_total(char, "DEX")) + char.initiative_misc
-    st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{ini_total:+d}</div><div class='pill-label'>Dex mod + misc</div></div>", unsafe_allow_html=True)
-with s2:
-    st.markdown("**Speed**")
-    st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{char.speed}</div><div class='pill-label'>ft.</div></div>", unsafe_allow_html=True)
-with s3:
-    st.markdown("**Armor Class**")
-    dex_mod = ability_mod(ability_total(char, "DEX"))
-    ac_total = 10 + char.ac_armor + char.ac_shield + dex_mod + char.ac_natural + char.ac_deflection + char.ac_misc
-    touch_ac = 10 + dex_mod + char.ac_deflection + char.ac_misc
-    flat_ac = 10 + char.ac_armor + char.ac_shield + char.ac_natural + char.ac_deflection + char.ac_misc
-    st.markdown(
-        f"""
-        <div class='card'>
-          <div class='big-number' style='text-align:center;'>{ac_total}</div>
-          <div class='subgrid'>
-            <div class='boxed'>Touch {touch_ac}</div>
-            <div class='boxed'>Flat-Footed {flat_ac}</div>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with s4:
+with row_top[6]:
     st.markdown("**Hit Points**")
-    # Use Streamlit's bordered container so widgets stay visually inside the card
     with st.container(border=True):
-        row = st.columns([2,1])
-        with row[0]:
+        upper = st.columns([2,1,1])
+        with upper[0]:
             st.markdown(
                 f"""
                 <div class='boxed'>
@@ -279,8 +253,10 @@ with s4:
                 """,
                 unsafe_allow_html=True,
             )
-        with row[1]:
+        with upper[1]:
             char.hp_temp = labelled_number("Temp", "hp_temp", char.hp_temp, min_value=0)
+        with upper[2]:
+            labelled_number("Nonlethal", "nonlethal", st.session_state.get("nonlethal", 0), min_value=0)
 
         amt = st.number_input("Amount", key="hp_change", min_value=0, step=1, value=0)
         b1, b2 = st.columns(2)
@@ -291,53 +267,82 @@ with s4:
             if st.button("Damage"):
                 char.hp_current = max(0, char.hp_current - amt)
 
-with s5:
-    st.markdown("**Nonlethal Damage**")
-    with st.container(border=True):
-        labelled_number("Nonlethal", "nonlethal", st.session_state.get("nonlethal", 0), min_value=0)
-
 st.markdown("---")
-lcol, mcol, rcol = st.columns([2.4, 3, 2.6])
-with lcol:
+# Second row layout
+c1, c2, c3, c4 = st.columns([1.2, 1.0, 1.2, 1.6])
+
+with c1:
     st.markdown("**Saving Throws**")
-    fort = char.fort_base + ability_mod(ability_total(char, "CON")) + char.save_misc
-    ref = char.ref_base + ability_mod(ability_total(char, "DEX")) + char.save_misc
-    will = char.will_base + ability_mod(ability_total(char, "WIS")) + char.save_misc
-    st.markdown(f"<div class='card'>Fortitude: <b>{fort:+d}</b><br/>Reflex: <b>{ref:+d}</b><br/>Will: <b>{will:+d}</b><br/><span class='pill-label'>(base + ability + misc)</span></div>", unsafe_allow_html=True)
+    with st.container(border=True):
+        fort = char.fort_base + ability_mod(ability_total(char, "CON")) + char.save_misc
+        ref = char.ref_base + ability_mod(ability_total(char, "DEX")) + char.save_misc
+        will = char.will_base + ability_mod(ability_total(char, "WIS")) + char.save_misc
+        st.markdown(
+            f"Fortitude: <b>{fort:+d}</b><br/>Reflex: <b>{ref:+d}</b><br/>Will: <b>{will:+d}</b><br/><span class='pill-label'>(base + ability + misc)</span>",
+            unsafe_allow_html=True,
+        )
 
+with c2:
+    st.markdown("**Initiative**")
+    with st.container(border=True):
+        ini_total = ability_mod(ability_total(char, "DEX")) + char.initiative_misc
+        st.markdown(f"<div class='big-number' style='text-align:center;'>{ini_total:+d}</div>", unsafe_allow_html=True)
+    st.markdown("**Speed**")
+    with st.container(border=True):
+        st.markdown(f"<div class='big-number' style='text-align:center;'>{char.speed}</div><div class='pill-label' style='text-align:center;'>ft.</div>", unsafe_allow_html=True)
+
+with c3:
+    st.markdown("**Armor Class**")
+    with st.container(border=True):
+        dex_mod = ability_mod(ability_total(char, "DEX"))
+        ac_total = 10 + char.ac_armor + char.ac_shield + dex_mod + char.ac_natural + char.ac_deflection + char.ac_misc
+        touch_ac = 10 + dex_mod + char.ac_deflection + char.ac_misc
+        flat_ac = 10 + char.ac_armor + char.ac_shield + char.ac_natural + char.ac_deflection + char.ac_misc
+        st.markdown(
+            f"""
+            <div class='big-number' style='text-align:center;'>{ac_total}</div>
+            <div class='subgrid'>
+              <div class='boxed'>Touch {touch_ac}</div>
+              <div class='boxed'>Flat-Footed {flat_ac}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     st.markdown("**Senses**")
-    senses_text = st.session_state.get("senses_notes", "Add senses (e.g., Darkvision 60 ft.)")
-    st.markdown(f"<div class='card'>{senses_text}</div>", unsafe_allow_html=True)
+    with st.container(border=True):
+        senses_text = st.session_state.get("senses_notes", "Add senses (e.g., Darkvision 60 ft.)")
+        st.markdown(senses_text)
 
-with mcol:
+with c4:
     st.markdown("**Conditions / Defenses**")
-    cond = st.session_state.get("conditions", "Add Active Conditions")
-    defs = st.session_state.get("defenses", "Add Defenses (DR/Resistances)")
-    st.markdown(
-        f"""
-        <div class='card'><div class='subgrid' style='grid-template-columns:1fr 1fr;'>
-           <div class='boxed'>{cond}</div>
-           <div class='boxed'>{defs}</div>
-         </div></div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with rcol:
+    with st.container(border=True):
+        cond = st.session_state.get("conditions", "Add Active Conditions")
+        defs = st.session_state.get("defenses", "Add Defenses (DR/Resistances)")
+        st.markdown(
+            f"""
+            <div class='subgrid' style='grid-template-columns:1fr 1fr;'>
+              <div class='boxed'>{cond}</div>
+              <div class='boxed'>{defs}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     st.markdown("**Base Attack Bonus**")
-    melee = char.bab + ability_mod(ability_total(char, "STR"))
-    ranged = char.bab + ability_mod(ability_total(char, "DEX"))
-    grapple = char.bab + ability_mod(ability_total(char, "STR"))
-    st.markdown(f"""
-        <div class='card' style='text-align:center;'>
-          <div class='big-number'>{char.bab:+d}</div>
-          <div class='subgrid'>
-            <div class='boxed'>Melee {melee:+d}</div>
-            <div class='boxed'>Ranged {ranged:+d}</div>
-            <div class='boxed'>Grapple {grapple:+d}</div>
-          </div>
-        </div>
-    """, unsafe_allow_html=True)
+    with st.container(border=True):
+        melee = char.bab + ability_mod(ability_total(char, "STR"))
+        ranged = char.bab + ability_mod(ability_total(char, "DEX"))
+        grapple = char.bab + ability_mod(ability_total(char, "STR"))
+        st.markdown(
+            f"""
+            <div class='big-number' style='text-align:center;'>{char.bab:+d}</div>
+            <div class='subgrid'>
+              <div class='boxed'>Melee {melee:+d}</div>
+              <div class='boxed'>Ranged {ranged:+d}</div>
+              <div class='boxed'>Grapple {grapple:+d}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 # ---------- Tabs ----------
 tactions, tskills, tfeats, tspells, tgear, tnotes = st.tabs([
