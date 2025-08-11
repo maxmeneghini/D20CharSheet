@@ -306,10 +306,12 @@ with mcol:
     cond = st.session_state.get("conditions", "Add Active Conditions")
     defs = st.session_state.get("defenses", "Add Defenses (DR/Resistances)")
     st.markdown(
-        f"<div class='card'><div class='subgrid' style='grid-template-columns:1fr 1fr;'>
+        f"""
+        <div class='card'><div class='subgrid' style='grid-template-columns:1fr 1fr;'>
            <div class='boxed'>{cond}</div>
            <div class='boxed'>{defs}</div>
-         </div></div>",
+         </div></div>
+        """,
         unsafe_allow_html=True,
     )
 
@@ -318,15 +320,16 @@ with rcol:
     melee = char.bab + ability_mod(ability_total(char, "STR"))
     ranged = char.bab + ability_mod(ability_total(char, "DEX"))
     grapple = char.bab + ability_mod(ability_total(char, "STR"))
-    st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{char.bab:+d}</div>
-                <div class='subgrid'><div class='boxed'>Melee {melee:+d}</div><div class='boxed'>Ranged {ranged:+d}</div><div class='boxed'>Grapple {grapple:+d}</div></div></div>", unsafe_allow_html=True)
-    st.markdown("**Conditions / Defenses**")
-    st.text_input("Active Conditions", key="conditions")
-    st.text_input("Defenses (DR/Resistances)", key="defenses")
-
-with rcol:
-    st.markdown("**Base Attack Bonus**")
-    st.markdown(f"<div class='card' style='text-align:center;'><div class='big-number'>{char.bab:+d}</div></div>", unsafe_allow_html=True)
+    st.markdown(f"""
+        <div class='card' style='text-align:center;'>
+          <div class='big-number'>{char.bab:+d}</div>
+          <div class='subgrid'>
+            <div class='boxed'>Melee {melee:+d}</div>
+            <div class='boxed'>Ranged {ranged:+d}</div>
+            <div class='boxed'>Grapple {grapple:+d}</div>
+          </div>
+        </div>
+    """, unsafe_allow_html=True)
 
 # ---------- Tabs ----------
 tactions, tskills, tfeats, tspells, tgear, tnotes = st.tabs([
