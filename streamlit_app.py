@@ -240,42 +240,40 @@ for i, ab in enumerate(["STR","DEX","CON","INT","WIS","CHA"]):
         )
 
 with row_top[6]:
-    st.markdown("**Hit Points**")
+    # Hit Points card (3 columns): [Heal/Input/Damage] | [Current/Max + title] | [Temp + Nonlethal]
     with st.container(border=True):
-        # Layout: [Heal/Damage] | [Current / Max] | [Temp] | [Nonlethal]
-        hpcols = st.columns([0.9, 2.4, 1.0, 1.0])
+        hpcols = st.columns([1.0, 2.2, 1.1])
+        # Column 1: Heal / Amount / Damage
         with hpcols[0]:
-            heal_val = labelled_number("Heal", "hp_heal", st.session_state.get("hp_heal", 0), min_value=0)
-            dmg_val = labelled_number("Damage", "hp_damage", st.session_state.get("hp_damage", 0), min_value=0)
+            if st.button("Heal", key="btn_heal"):
+                amt = int(st.session_state.get("hp_amount", 0) or 0)
+                char.hp_current = min(char.hp_max, char.hp_current + amt)
+            st.number_input(" ", key="hp_amount", min_value=0, step=1, label_visibility="collapsed")
+            if st.button("Damage", key="btn_damage"):
+                amt = int(st.session_state.get("hp_amount", 0) or 0)
+                char.hp_current = max(0, char.hp_current - amt)
+        # Column 2: Current / Max and bottom title
         with hpcols[1]:
             st.markdown(
                 f"""
                 <div style='text-align:center;'>
-                  <div class='pill-label'>Current</div>
-                  <span class='big-number' style='display:inline-block;margin-right:.4rem;'>{char.hp_current}</span>
-                  <span class='big-number' style='display:inline-block;margin:0 .2rem;'>/</span>
-                  <div class='pill-label' style='display:inline-block;margin-left:.4rem;'>Max</div>
-                  <span class='big-number' style='display:inline-block;margin-left:.4rem;'>{char.hp_max}</span>
+                  <div class='pill-label' style='display:flex;justify-content:space-between;'>
+                    <span>Current</span><span>Max</span>
+                  </div>
+                  <div style='display:flex;justify-content:center;gap:.6rem;align-items:baseline;'>
+                    <span class='big-number'>{char.hp_current}</span>
+                    <span class='big-number'>/</span>
+                    <span class='big-number'>{char.hp_max}</span>
+                  </div>
+                  <div class='pill-label' style='text-transform:uppercase;margin-top:.35rem;'>Hit Points</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
+        # Column 3: Temp and Nonlethal
         with hpcols[2]:
             char.hp_temp = labelled_number("Temp", "hp_temp", char.hp_temp, min_value=0)
-        with hpcols[3]:
             labelled_number("Nonlethal", "nonlethal", st.session_state.get("nonlethal", 0), min_value=0)
-
-        # Apply effects based on changes in Heal/Damage (difference-based)
-        prev_heal = st.session_state.get("_prev_hp_heal", 0)
-        prev_dmg = st.session_state.get("_prev_hp_damage", 0)
-        if heal_val > prev_heal:
-            delta_h = heal_val - prev_heal
-            char.hp_current = min(char.hp_max, char.hp_current + delta_h)
-        if dmg_val > prev_dmg:
-            delta_d = dmg_val - prev_dmg
-            char.hp_current = max(0, char.hp_current - delta_d)
-        st.session_state["_prev_hp_heal"] = heal_val
-        st.session_state["_prev_hp_damage"] = dmg_val
 
 st.markdown("---")
 # Second row layout
